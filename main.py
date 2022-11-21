@@ -4,7 +4,7 @@ import pickle
 from model import LightGCL
 from utils import metrics, scipy_sparse_mat_to_torch_sparse_tensor
 import pandas as pd
-from parser import args
+from parsers import args
 from tqdm import tqdm
 import time
 
@@ -87,6 +87,9 @@ def learning_rate_decay(optimizer):
 
 current_lr = lr
 
+from tensorboardX import SummaryWriter
+log_writer: SummaryWriter = SummaryWriter(join(time.strftime("%m-%d-%Hh%Mm%Ss-")+args.data))
+
 for epoch in range(epoch_no):
     if (epoch+1)%50 == 0:
         torch.save(model.state_dict(),'saved_model_epoch_'+str(epoch)+'.pt')
@@ -109,8 +112,7 @@ for epoch in range(epoch_no):
         pos = []
         neg = []
         iids = set()
-        for i in range(len(batch_users)):
-            u = batch_users[i]
+        for u in batch_users:
             u_interact = train_csr[u].toarray()[0]
             positive_items = np.random.permutation(np.where(u_interact==1)[0])
             negative_items = np.random.permutation(np.where(u_interact==0)[0])
@@ -144,7 +146,9 @@ for epoch in range(epoch_no):
     loss_r_list.append(epoch_loss_r)
     loss_s_list.append(epoch_loss_s)
     print('Epoch:',epoch,'Loss:',epoch_loss,'Loss_r:',epoch_loss_r,'Loss_s:',epoch_loss_s)
-
+    
+    log_writer.add_scalars(f'TrainLoss',{'Total':epoch_loss, 'BPR':epoch_loss_r, 'Contrastive':epoch_loss_s}, epoch)
+    
     if epoch % 3 == 0:  # test every 10 epochs
         test_uids = np.array([i for i in range(adj_norm.shape[0])])
         batch_no = int(np.ceil(len(test_uids)/batch_user))
@@ -178,6 +182,11 @@ for epoch in range(epoch_no):
         ndcg_20_y.append(all_ndcg_20/batch_no)
         recall_40_y.append(all_recall_40/batch_no)
         ndcg_40_y.append(all_ndcg_40/batch_no)
+        
+        log_writer.add_scalars(f'Test',{'Recall20':all_recall_20/batch_no, 
+        'NDCG20':all_ndcg_20/batch_no, 
+        'Recall40':all_recall_40/batch_no,
+        'NDCG40':all_ndcg_40/batch_no}, epoch)
 
 # final test
 test_uids = np.array([i for i in range(adj_norm.shape[0])])
@@ -226,3 +235,5 @@ metric.to_csv('log/result_'+args.data+'_'+time.strftime('%Y-%m-%d',current_t)+'.
 
 torch.save(model.state_dict(),'saved_model/saved_model_'+args.data+'_'+time.strftime('%Y-%m-%d',current_t)+'.pt')
 torch.save(optimizer.state_dict(),'saved_model/saved_optim_'+args.data+'_'+time.strftime('%Y-%m-%d',current_t)+'.pt')
+
+log_writer.close()
