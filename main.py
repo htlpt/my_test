@@ -88,7 +88,7 @@ def learning_rate_decay(optimizer):
 current_lr = lr
 
 from tensorboardX import SummaryWriter
-log_writer: SummaryWriter = SummaryWriter(join(time.strftime("%m-%d-%Hh%Mm%Ss-")+args.data))
+log_writer: SummaryWriter = SummaryWriter(time.strftime("%m-%d-%Hh%Mm%Ss-")+args.data)
 
 for epoch in range(epoch_no):
     if (epoch+1)%50 == 0:
@@ -182,7 +182,7 @@ for epoch in range(epoch_no):
         ndcg_20_y.append(all_ndcg_20/batch_no)
         recall_40_y.append(all_recall_40/batch_no)
         ndcg_40_y.append(all_ndcg_40/batch_no)
-        
+
         log_writer.add_scalars(f'Test',{'Recall20':all_recall_20/batch_no, 
         'NDCG20':all_ndcg_20/batch_no, 
         'Recall40':all_recall_40/batch_no,
