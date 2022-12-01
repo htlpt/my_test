@@ -44,8 +44,10 @@ print('Performing SVD...')
 svd_u,s,svd_v = torch.svd_lowrank(adj,q=svd_q)
 u_mul_s = svd_u @ torch.diag(s)
 v_mul_s = svd_v @ torch.diag(s)
+
 del adj
-del s
+#del s
+
 print('SVD done.')
 
 rowD = np.array(train.sum(1)).squeeze()
@@ -72,7 +74,7 @@ ndcg_20_y = []
 recall_40_y = []
 ndcg_40_y = []
 
-model = LightGCL(adj_norm.shape[0], adj_norm.shape[1], d, u_mul_s, v_mul_s, svd_u.T, svd_v.T, train_csr, adj_norm, l, temp, lambda_1, dropout, batch_user, device)
+model = LightGCL(adj_norm.shape[0], adj_norm.shape[1], d, svd_u, s, svd_v, svd_u.T, svd_v.T, train_csr, adj_norm, l, temp, lambda_1, dropout, batch_user, device)
 #model.load_state_dict(torch.load('saved_model.pt'))
 model.cuda(torch.device(device))
 optimizer = torch.optim.Adam(model.parameters(),weight_decay=lambda_2,lr=lr)
